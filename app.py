@@ -6,6 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
+from huggingface_hub import hf_hub_download
 
 # Streamlit page configuration
 st.set_page_config(
@@ -163,12 +164,28 @@ with input_section:
                 'Logistic Regression': 'LR.pkl',
                 'Support Vector Classifier': 'svc.pkl',
                 'Decision Tree': 'DT.pkl',
-                'Random Forest': 'RF.pkl',
+                'Random Forest': None,  # Will be loaded from Hugging Face
                 'KNeighbors': 'Kn.pkl'
             }
             
-            with open(models_dict[models], 'rb') as f:
-                selected_model = pickle.load(f)
+            if models == 'Random Forest':
+                # Show loading spinner while downloading model
+                with st.spinner('Downloading Random Forest model from Hugging Face...'):
+                    try:
+                        model_path = hf_hub_download(
+                            repo_id="HamzaNawaz17/DiabetesPredictionusingRandomForest",
+                            filename="RF.pkl",
+                            cache_dir="models"
+                        )
+                        with open(model_path, 'rb') as f:
+                            selected_model = pickle.load(f)
+                        st.success("Random Forest model loaded successfully!")
+                    except Exception as e:
+                        st.error(f"Failed to load Random Forest model from Hugging Face: {str(e)}")
+                        st.stop()
+            else:
+                with open(models_dict[models], 'rb') as f:
+                    selected_model = pickle.load(f)
 
             # Make Predictions with probability
             prediction = selected_model.predict(input_data)
